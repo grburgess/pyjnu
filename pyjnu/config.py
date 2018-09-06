@@ -1,7 +1,11 @@
+__author__ = 'grburgess, Stephan-Berger'
+
+
 """
 config.py
 Authors:
     -Stephan Meighen-Berger
+
 Config file for the pyjnu runs.
 Changes should for now be made here for
 differing runs. Once typical variables
