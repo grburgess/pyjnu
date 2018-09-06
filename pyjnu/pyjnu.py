@@ -64,9 +64,9 @@ class PyRun(Logger):
         self.logger.info('Finished initialization')
         return
 
-    def __init_spectrum(self, PDG_ID):
+    def _init_spectrum(self, PDG_ID):
         """
-        function: __init_spectrum
+        function: _init_spectrum
         Function to create the initial spectrum of particles.
         This is currently a version for the stable state case
         Parameters:
@@ -77,7 +77,7 @@ class PyRun(Logger):
         """
         # Shorthand
         part = self.particles[PDG_ID]
-        f = lambda x: self.__int__bpl(x, [config['p1'], config['gb']])
+        f = lambda x: self._int_bpl(x, [config['p1'], config['gb']])
         tmp_flux = np.zeros(self.particles[PDG_ID].size)
         for i in range(0, self.particles[PDG_ID].size):
             if (part.e_borders[i + 1] > config['gmin'] and part.e_borders[i] < config['gmax']):
@@ -91,7 +91,7 @@ class PyRun(Logger):
 
         self.particles[PDG_ID].flux['0'] = tmp_flux * self.geom.K / total
 
-    def __int__bpl(self, x, param):
+    def _int_bpl(self, x, param):
         """
         function: __int_pbl
         Returns exponential depending on the input
@@ -212,7 +212,7 @@ class PyRun(Logger):
                              self.config['z'])
         self.logger.info('Geometry set')
         self.logger.info('The initial electron spectrum...')
-        self.__init_spectrum('11')
+        self._init_spectrum('11')
         self.logger.info('Set the initial spectrum')
         # Synchrotron
         self.logger.info('Synchrotron...')
