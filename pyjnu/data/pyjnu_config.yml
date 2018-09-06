@@ -1,0 +1,32 @@
+geometry:
+  
+  # Default geometry parameters
+  
+  Bfield (number): 0.088
+  delta (number): 230
+  R (number): 0.19e15
+  gc (number): 3.1e4
+  gmin (number): 1e3
+  gmax (number): 1.3e5
+  gb (number): 3.1e4
+  Ke (number): 2e40
+
+  d (number): 540.
+  z (number): 0.116
+
+numerics:
+
+    grid_22 (number) : 150
+    grid_11 (number) : 100
+    grid_22_local (number) : 150
+    emin_22 (number) : 1e-2
+    emax_22 (number) : 1e30
+    emin_22_local (number) : 0.01
+    emax_22_local (number) : 1e30
+    emin_11 (number) : 10.
+    emax_11 (number) : 1e8
+    p1 (number) : 2.7
+    prec (number) : 1e-7
+    loga (number) : 0
+    node_number (number) : 15
+
