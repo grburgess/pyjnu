@@ -40,15 +40,15 @@ class particle(object):
         self._emax = config['emax_' + PDG_ID]
         self._size = config['grid_' + PDG_ID]
 
-        self._step = np.exp(np.log(self.emax / self.emin) / self.size)
-        self._e_grid = np.logspace(np.log10(self.emin), np.log10(self.emax),
-                                  self.size, base=np.e, endpoint=False)
-        self._e_borders = self.e_grid * sqrt(self.step)
+        self._step = np.exp(np.log(self._emax / self._emin) / self._size)
+        self._e_grid = np.logspace(np.log10(self._emin), np.log10(self._emax),
+                                  self._size, base=np.e, endpoint=False)
+        self._e_borders = self._e_grid * sqrt(self._step)
         # First position in the borders
-        self._e_borders = np.insert(self.e_borders, 0,
-                                   self.emin / sqrt(self.step))
-        self._e_diff = np.diff(self.e_borders)
+        self._e_borders = np.insert(self._e_borders, 0,
+                                   self._emin / sqrt(self._step))
+        self._e_diff = np.diff(self._e_borders)
 
         self._flux = {}
         self._dflux = {}
-        #self.logger.info('Finished particle ' + PDG_ID)
+        #self._logger.info('Finished particle ' + PDG_ID)
