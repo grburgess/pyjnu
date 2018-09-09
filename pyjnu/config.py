@@ -371,7 +371,7 @@ class Config(object):
     @staticmethod
     def _remove_type(d):
 
-        return dict(map(lambda (key, value): (key.split("(")[0].rstrip(), value), d.items()))
+        return dict(map(lambda key, value: (key.split("(")[0].rstrip(), value), d.items()))
 
     def _get_copy_with_no_types(self, multilevelDict):
 
