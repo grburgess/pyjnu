@@ -53,7 +53,7 @@ import shutil
 import re
 import pkg_resources
 import yaml
-import urlparse
+#import urlparse
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 
@@ -123,12 +123,12 @@ class Config(object):
                 except ConfigurationFileCorrupt:
 
                     # Probably an old configuration file
-                    custom_warnings.warn("The user configuration file at %s does not appear to be valid. We will "
-                                         "substitute it with the default configuration. You will find a copy of the "
-                                         "old configuration at %s so you can transfer any customization you might "
-                                         "have from there to the new configuration file. We will use the default "
-                                         "configuration for this session."
-                                         %(user_config_path, "%s.bak" % user_config_path))
+                    # custom_warnings.warn("The user configuration file at %s does not appear to be valid. We will "
+                    #                      "substitute it with the default configuration. You will find a copy of the "
+                    #                      "old configuration at %s so you can transfer any customization you might "
+                    #                      "have from there to the new configuration file. We will use the default "
+                    #                      "configuration for this session."
+                    #                      %(user_config_path, "%s.bak" % user_config_path))
 
                     # Move the config file to a backup file
                     shutil.copy2(user_config_path, "%s.bak" % user_config_path)
@@ -150,9 +150,9 @@ class Config(object):
 
         else:
 
-            custom_warnings.warn("Using default configuration from %s. "
-                                 "You might want to copy it to %s to customize it and avoid this warning."
-                                 % (self._default_path, user_config_path))
+            # custom_warnings.warn("Using default configuration from %s. "
+            #                      "You might want to copy it to %s to customize it and avoid this warning."
+            #                      % (self._default_path, user_config_path))
 
             self._configuration = self._check_configuration(self._default_configuration_raw, self._default_path)
             self._filename = self._default_path
@@ -206,53 +206,58 @@ class Config(object):
 
         return type(var) == str
 
-    @staticmethod
-    def is_ftp_url(var):
+    # @staticmethod
+    # def is_ftp_url(var):
 
-        try:
+    #     try:
 
-            tokens = urlparse.urlparse(var)
+    #         tokens = urlparse.urlparse(var)
 
-        except:
+    #     except:
 
-            # This is very rare, as almost anything is a valid URL
-            return False
+    #         # This is very rare, as almost anything is a valid URL
+    #         return False
 
-        else:
+    #     else:
 
-            if tokens.scheme != 'ftp' or tokens.netloc == '':
+    #         if tokens.scheme != 'ftp' or tokens.netloc == '':
 
-                return False
+    #             return False
 
-            else:
+    #         else:
 
-                return True
+    #             return True
 
-    @staticmethod
-    def is_http_url(var):
+    # @staticmethod
+    # def is_http_url(var):
 
-        try:
+    #     try:
 
-            tokens = urlparse.urlparse(var)
+    #         tokens = urlparse.urlparse(var)
 
-        except:
+    #     except:
 
-            # This is very rare, as almost anything is a valid URL
-            return False
+    #         # This is very rare, as almost anything is a valid URL
+    #         return False
 
-        else:
+    #     else:
 
-            if (tokens.scheme != 'http' and tokens.scheme != 'https') or tokens.netloc == '':
+    #         if (tokens.scheme != 'http' and tokens.scheme != 'https') or tokens.netloc == '':
 
-                return False
+    #             return False
 
-            else:
+    #         else:
 
-                return True
+    #             return True
 
     @staticmethod
     def is_number(val):
 
+        if type(val) == str:
+            if 'e' in val or 'E' in  val:
+
+                val = float(val)
+        
         return type(val) == int or type(val) == float
 
     def _subs_values_with_none(self, d):
@@ -328,8 +333,8 @@ class Config(object):
                                        ", ".join(plt.colormaps())),
                               'name'     : (self.is_string, "a valid name (string)"),
                               'switch'   : (self.is_bool, "one of yes, no, True, False"),
-                              'ftp url'  : (self.is_ftp_url, "a valid FTP URL"),
-                              'http url' : (self.is_http_url, "a valid HTTP(S) URL"),
+                              # 'ftp url'  : (self.is_ftp_url, "a valid FTP URL"),
+                              # 'http url' : (self.is_http_url, "a valid HTTP(S) URL"),
 
                               'number'   : (self.is_number, "an int or float"),
                               }
@@ -371,7 +376,7 @@ class Config(object):
     @staticmethod
     def _remove_type(d):
 
-        return dict(map(lambda key, value: (key.split("(")[0].rstrip(), value), d.items()))
+        return dict([ (key.split("(")[0].rstrip(), value)  for key, value in d.items()])
 
     def _get_copy_with_no_types(self, multilevelDict):
 
