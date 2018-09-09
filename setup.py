@@ -6,11 +6,38 @@ import sys
 import glob
 
 from setuptools import setup
+from setuptools.command.develop import develop
+from setuptools.command.install import install
+
+
+
+class PostInstallCommand(install):
+    """
+    Post-installation for installation mode.
+    """
+
+    def run(self):
+        from pyjnu.utils.create_rates import create_rates
+        print('creating rate database')
+        create_rates()
+        install.run(self)
+
+class PostDevelopCommand(develop):
+    """
+    Post-installation for installation mode.
+    """
+
+    def run(self):
+        from pyjnu.utils.create_rates import create_rates
+        print('creating rate database')
+        create_rates()
+        install.run(self)
+
 
 # Get the version number
-with open("pyjnu/version.py") as f:
-    version_code = compile(f.read(), "pyjnu/version.py", 'exec')
-    exec(version_code)
+# with open("pyjnu/version.py") as f:
+#     version_code = compile(f.read(), "pyjnu/version.py", 'exec')
+#     exec(version_code)
 
 # Now a global __version__ is available
 
@@ -61,12 +88,12 @@ setup(
               'pyjnu/exceptions',
               'pyjnu/utils',
               'pyjnu/io',
-              'pyjnu/io/plotting',
-              'pyjnu/config',
-              'pyjnu/test'
+#              'pyjnu/io/plotting',
+#              'pyjnu/config',
+#              'pyjnu/test'
               ],
 
-    version=__version__,
+    #version=__version__,
 
     description="pyjnu: Photon and Particle Emission from astrophysical sources",
 
@@ -80,23 +107,23 @@ setup(
 
     url='https://github.com/grburgess/pyjnu',
 
-    download_url='https://github.com/giacomov/3ML/archive/%s' % __version__,
+#    download_url='https://github.com/grburgess/pyjnu/archive/%s' % __version__,
 
     keywords=['spectra', 'modeling', 'neutrino', 'photon', 'gamma-ray', 'x-ray', 'multi-wavelength'],
 
     classifiers=[],
 
-    # Install configuration file in user home and in the package repository
-
-    # data_files=[(os.path.join(os.path.expanduser('~'), '.pyjnu'), ["pyjnu/config/pyjnu_config.yml"]),
-    #             ('pyjnu/config', ["pyjnu/config/pyjnu_config.yml"])
-    #             ],
 
     # NOTE: we use '' as package name because the extra_files already contain the full path from here
 
-        package_data={'': extra_files, },
+    package_data={'': extra_files, },
     include_package_data=True,
 
+    cmdclass={
+        'develop': PostDevelopCommand,
+        'install': PostInstallCommand,
+    },
+    
     install_requires=[
         'numpy >= 1.6',
         'scipy >=0.18',
@@ -106,9 +133,13 @@ setup(
         'dill',
         'astromodels>=0.4.0',
         'pandas',
-        'ipython<=5.9'
+        'ipython<=5.9',
+        'h5py'
     ],
 
+
+
+    
     extras_require={
             'tests': [
                 'pytest',],
@@ -119,32 +150,5 @@ setup(
 
     ) # End of setup()
 
-# Check for optional dependencies
 
-# optional_dependencies = {'cpyjnu': [False,'needed by HAWC plugin'],
-#                          'pymultinest': [False, 'provides the Multinest sampler for Bayesian analysis'],
-#                          'pyOpt': [False, 'provides more optimizers'],
-#                          'ROOT': [False, 'provides the ROOT optimizer'],
-#                          'ipywidgets': [False, 'provides widget for jypyter (like the HTML progress bar)']}
 
-# for dep_name in optional_dependencies:
-
-#     optional_dependencies[dep_name][0] = is_module_available(dep_name)
-
-# # Now print the final messages
-
-# print("\n\n##################")
-# print("OPTIONAL FEATURES:")
-# print("##################\n\n")
-
-# for dep_name in optional_dependencies:
-    
-#     if optional_dependencies[dep_name][0]:
-        
-#         status = 'available'
-    
-#     else:
-        
-#         status = '*NOT* available'
-    
-#     print(" * %s is %s (%s)\n" % (dep_name, status, optional_dependencies[dep_name][1]))
