@@ -7,7 +7,7 @@ pyjnu.
 """
 # External
 import numpy as np
-import csv
+
 import cPickle
 from math import pi
 # Internal
@@ -16,11 +16,14 @@ from geometry import geometry
 from config import config
 from constants import pdg_id_lib, unit_conv, phys_const
 from nodes import nodes
-from logger import Logger
 from scipy.integrate import quad
 
+import h5py
 
-class PyRun(Logger):
+from pyjnu.io.package_data import get_path_of_data_file
+from pyjnu.config import pyjnu_config
+
+class PyRun(object):
     """
     class: PyRun
     PyRun is the interface to the package for the user.
@@ -30,7 +33,7 @@ class PyRun(Logger):
         -None
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         """
         function: __init__
         Function to initialize the class.
@@ -41,28 +44,35 @@ class PyRun(Logger):
         Returns:
             -None
         """
-        self.logger.info('Initializing the class...')
+
+
+        # Loading rates
+        
+        self._read_rates()
+
+        
         # User variables
 
-        self.config = config
-        self.logger.info('Setting user defined variables..')
-        for key in kwargs.keys():
-            self.config[key] = kwargs[key]
-
-        self.logger.info('Finished setting the variables.')
+    
+        
         # Creating particles
-        self.logger.info('Creating the particle instances...')
+        
         self.particles = {}
         for key in pdg_id_lib:
             self.particles[pdg_id_lib[key]] = particle(pdg_id_lib[key])
         self.particles['22_local'] = particle('22_local')
-        self.logger.info('Finished particle creation')
-        # Loading rates
-        self.logger.info('Loading the rates...')
-        self.emissivity()
-        self.logger.info('Finished loading')
-        self.logger.info('Finished initialization')
-        return
+        
+        
+
+
+        def _read_rates(self):
+            """
+            """
+            with h5py.File(get_path_of_data_file('rates.h5')) as f:
+
+                self._selfynch_rate = f['synchrotron_rate']
+                self._opacity = f['opacitiy']
+                self._ic_rate = f['ic_rate']
 
     def _init_spectrum(self, PDG_ID):
         """
@@ -109,41 +119,7 @@ class PyRun(Logger):
         else:
             return ((x / param[1])**(-param[0] - 1))
 
-    def emissivity(self):
-        """
-        function: emissivity
-        Calculates the emissions of the object
-        Parameters:
-            -None
-        Returns:
-            -None
-        """
-        # Synchrotron
-
-        tmp = []
-        with open('../data/synchrotron_rate.txt', 'r') as f:
-            reader = csv.reader(f, delimiter='\t', quoting=csv.QUOTE_NONNUMERIC)
-            for row in reader:
-                tmp.append(row)
-        tmp = np.array(tmp)
-        self.synch_rate = np.split(tmp[:, 2], len(tmp) / config['grid_11'])
-
-        # Opacity
-        tmp = []
-        with open('../data/tau.txt', 'r') as f:
-            reader = csv.reader(f, delimiter='\t', quoting=csv.QUOTE_NONNUMERIC)
-            for row in reader:
-                tmp.append(row)
-        tmp = np.array(tmp)
-        self.opacity_rate = np.split(tmp[:, 2], len(tmp) / config['grid_11'])
-
-        # Inverse Compton
-        self.IC_rate = np.zeros((config['grid_22'], config['grid_22'], config['grid_11'], 3))
-        with open('../data/IC_rate.txt', 'r') as f:
-            reader = csv.reader(f, delimiter='\t', quoting=csv.QUOTE_NONNUMERIC)
-            for row in reader:
-                self.IC_rate[int(row[0])][int(row[1])][int(row[2])] = ([row[3], row[4], 1.])
-        tmp = None
+   
 
     def rescale(self, ID1, ID2):
         """
@@ -168,7 +144,7 @@ class PyRun(Logger):
 
             #  TODO: still need to be rewritten using slicing
             i = 0
-            self.logger.info("Case A")
+            
             while nubar < self.particles[ID2].e_borders[0]:
                 i += 1
                 nubar = (self.particles[ID1].e_borders[i] * self.geom.nuB)
@@ -182,7 +158,7 @@ class PyRun(Logger):
                     (part1.e_diff[j + 1] * self.geom.nuB))
         # Case B : nubar > ph2.Eb[0]
         else:
-            self.logger.info('Case B')
+            
             i = np.where(nubar < part2.e_borders)[0][0] - 1
             # Now ph2.Eb[i] < ph1.Eb[0] * nuB < ph2.Eb[i+1]
             self.particles[ID2].flux['0'][i] = (
@@ -206,16 +182,15 @@ class PyRun(Logger):
         Returns:
             -None
         """
-        self.logger.info('Starting steady state solving...')
-        self.logger.info('Setting the geometry...')
-        self.geom = geometry(self.config['Bfield'], self.config['delta'], self.config['R'], self.config['d'],
-                             self.config['z'])
-        self.logger.info('Geometry set')
-        self.logger.info('The initial electron spectrum...')
+        
+        self.geom = geometry(pyjnu_config['Bfield'], pyjnu_config['delta'], pyjnu_config['R'], pyjnu_config['d'],
+                             pyjnu_config['z'])
+        
+        
         self._init_spectrum('11')
-        self.logger.info('Set the initial spectrum')
+        
         # Synchrotron
-        self.logger.info('Synchrotron...')
+        
         A = self.geom.A
         # Move below part to particl
         self.particles['22_local'].flux['0'] = np.zeros(config['grid_22_local'])
@@ -223,7 +198,7 @@ class PyRun(Logger):
         # transition from electron_j to gamma_i
 
         self.particles['22_local'].flux['0'] = \
-            A * np.dot(self.synch_rate,
+            A * np.dot(self._synch_rate,
                        self.particles['11'].flux['0'] /
                        self.particles['11'].e_diff) / self.particles['22'].e_diff
 
@@ -251,7 +226,7 @@ class PyRun(Logger):
         #     )
 
         # IC
-        self.logger.info('Inverse Compton...')
+        
         self.particles['22_local'].flux['2'] = np.zeros(config['grid_22_local'])
         self.particles['22'].flux['0'] = np.zeros(config['grid_22'])
         self.particles['22'].flux['2'] = np.zeros(config['grid_22'])
@@ -278,10 +253,10 @@ class PyRun(Logger):
         for i in range(0, config['grid_22']):
 
             # TODO: Do we need the mask? or is it always one?
-            mask = self.IC_rate[i, :, :, 2] == 1.
+            mask = self._ic_rate[i, :, :, 2] == 1.
 
             # This is now a matrix vector multiplication
-            term = (np.dot(self.IC_rate[i, :, :, 0] * mask,
+            term = (np.dot(self._ic_rate[i, :, :, 0] * mask,
                            self.particles['11'].flux['0'] / self.particles['11'].e_diff))
             summIC[i] = np.sum(self.particles['22'].flux['0'] * term)
 
@@ -316,16 +291,15 @@ class PyRun(Logger):
 
         self.particles['22'].e_grid = (self.particles['22'].e_grid * self.geom.delta / (1. + self.geom.z))
         # Storing results
-        self.logger.info('Storing results...')
+
+
+
+        # what is this?
         saveString = '../data/results.pkl'
         with open(saveString, 'wb') as f:
             cPickle.dump(self.particles, f, protocol=cPickle.HIGHEST_PROTOCOL)
         # Load with
         # with open(saveString, 'rb') as f:
         #             self.particles = cPickle.load(f)
-        self.logger.info('Finished steady state solving...')
-        self.logger.info('Results stored in particle fluxes...')
-        handlers = self.logger.handlers[:]
-        for handler in handlers:
-            handler.close()
-            self.logger.removeHandler(handler)
+        
+        
