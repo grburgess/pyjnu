@@ -2,6 +2,7 @@
 pyjnu.py
 Authors:
     -Stephan Meighen-Berger
+    -Theo Glauch
 Main run file for the python implementation of
 pyjnu.
 """
@@ -121,37 +122,99 @@ class PyRun(Logger):
         """
         # Synchrotron
 
-        tmp = []
-        with open('../data/synchrotron_rate.txt', 'r') as f:
-            reader = csv.reader(f, delimiter='\t',
-                                quoting=csv.QUOTE_NONNUMERIC)
-            for row in reader:
-                tmp.append(row)
-        tmp = np.array(tmp)
-        self.synch_rate = np.split(tmp[:, 2], len(tmp) / config['grid_11'])
+        # Added pickle storage to maybe decrease loading time
+        saveString = '../data/synchrotron_rate.pkl'
+        try:
+            with open(saveString, 'rb') as f:
+                    self.synch_rate = cPickle.load(f)
+        except:
+            tmp = []
+            with open('../data/synchrotron_rate.txt', 'r') as f:
+                reader = csv.reader(f, delimiter='\t',
+                                    quoting=csv.QUOTE_NONNUMERIC)
+                for row in reader:
+                    tmp.append(row)
+            tmp = np.array(tmp)
+            self.synch_rate = np.split(tmp[:, 2], len(tmp) / config['grid_11'])
+            with open(saveString, 'wb') as f:
+                        cPickle.dump(self.synch_rate,
+                                     f, protocol=cPickle.HIGHEST_PROTOCOL)
+            tmp = None
+        # Load with
+        # with open(saveString, 'rb') as f:
+        #             self.particles = cPickle.load(f)
+        # tmp = []
+        # with open('../data/synchrotron_rate.txt', 'r') as f:
+        #     reader = csv.reader(f, delimiter='\t',
+        #                         quoting=csv.QUOTE_NONNUMERIC)
+        #     for row in reader:
+        #         tmp.append(row)
+        # tmp = np.array(tmp)
+        # self.synch_rate = np.split(tmp[:, 2], len(tmp) / config['grid_11'])
 
         # Opacity
-        tmp = []
-        with open('../data/tau.txt', 'r') as f:
-            reader = csv.reader(f, delimiter='\t',
-                                quoting=csv.QUOTE_NONNUMERIC)
-            for row in reader:
-                tmp.append(row)
-        tmp = np.array(tmp)
-        self.opacity_rate = np.split(tmp[:, 2], len(tmp) / config['grid_11'])
+
+        # Added pickle storage to maybe decrease loading time
+        saveString = '../data/tau.pkl'
+        try:
+            with open(saveString, 'rb') as f:
+                    self.opacity_rate = cPickle.load(f)
+        except:
+            tmp = []
+            with open('../data/tau.txt', 'r') as f:
+                reader = csv.reader(f, delimiter='\t',
+                                    quoting=csv.QUOTE_NONNUMERIC)
+                for row in reader:
+                    tmp.append(row)
+            tmp = np.array(tmp)
+            self.opacity_rate = np.split(tmp[:, 2], len(tmp) / config['grid_11'])
+            with open(saveString, 'wb') as f:
+                        cPickle.dump(self.opacity_rate,
+                                     f, protocol=cPickle.HIGHEST_PROTOCOL)
+            tmp = None
+        # tmp = []
+        # with open('../data/tau.txt', 'r') as f:
+        #     reader = csv.reader(f, delimiter='\t',
+        #                         quoting=csv.QUOTE_NONNUMERIC)
+        #     for row in reader:
+        #         tmp.append(row)
+        # tmp = np.array(tmp)
+        # self.opacity_rate = np.split(tmp[:, 2], len(tmp) / config['grid_11'])
 
         # Inverse Compton
-        self.IC_rate = np.zeros((config['grid_22'],
-                                 config['grid_22'],
-                                 config['grid_11'],
-                                 3))
-        with open('../data/IC_rate.txt', 'r') as f:
-            reader = csv.reader(f, delimiter='\t',
-                                quoting=csv.QUOTE_NONNUMERIC)
-            for row in reader:
-                self.IC_rate[int(row[0])][int(row[1])][int(row[2])] = (
-                    [row[3], row[4], 1.])
-        tmp = None
+
+        # Added pickle storage to maybe decrease loading time
+        saveString = '../data/IC_rate.pkl'
+        try:
+            with open(saveString, 'rb') as f:
+                    self.IC_rate = cPickle.load(f)
+        except:
+            self.IC_rate = np.zeros((config['grid_22'],
+                                    config['grid_22'],
+                                    config['grid_11'],
+                                    2))
+            with open('../data/IC_rate.txt', 'r') as f:
+                reader = csv.reader(f, delimiter='\t',
+                                    quoting=csv.QUOTE_NONNUMERIC)
+                for row in reader:
+                    self.IC_rate[int(row[0])][int(row[1])][int(row[2])] = (
+                        [row[3], row[4]]
+                    )  
+            with open(saveString, 'wb') as f:
+                        cPickle.dump(self.IC_rate,
+                                     f, protocol=cPickle.HIGHEST_PROTOCOL)
+
+        # self.IC_rate = np.zeros((config['grid_22'],
+        #                          config['grid_22'],
+        #                          config['grid_11'],
+        #                          2))
+        # with open('../data/IC_rate.txt', 'r') as f:
+        #     reader = csv.reader(f, delimiter='\t',
+        #                         quoting=csv.QUOTE_NONNUMERIC)
+        #     for row in reader:
+        #         self.IC_rate[int(row[0])][int(row[1])][int(row[2])] = (
+        #             [row[3], row[4]]
+        #         )       
 
     def rescale(self, ID1, ID2):
         """
@@ -238,21 +301,12 @@ class PyRun(Logger):
         # Synchrotron
         self.logger.info('Synchrotron...')
         A = self.geom.A
-        # Move below part to particl
         self.particles['22_local'].flux['0'] = np.zeros(config['grid_22_local'])
-
         # transition from electron_j to gamma_i
-
         self.particles['22_local'].flux['0'] = \
             A * np.dot(self.synch_rate,
                        self.particles['11'].flux['0'] /
                        self.particles['11'].e_diff) / self.particles['22'].e_diff
-
-        # There is a slight difference in the particle spectra here
-        # debug_out = [(self.particles['22_local'].e_grid[i] * self.geom.delta / (1. + self.geom.z),
-        #               self.particles['22_local'].flux['0'][i])
-        #              for i in range(0, config['grid 22_local'])]
-        # print(debug_out)
         # This is not implemented in Damien's code
         # Also not sure what type of function onemexpdexp is,
         # it is not implemented in Damien's code
@@ -277,32 +331,12 @@ class PyRun(Logger):
         self.particles['22'].flux['0'] = np.zeros(config['grid_22'])
         self.particles['22'].flux['2'] = np.zeros(config['grid_22'])
         # Rescaling the photon grid according to the local version
-        # print('The local photon before rescaling')
-        # print([(self.particles['22_local'].e_grid[i] * self.geom.delta / (1. + self.geom.z),
-        #         self.particles['22_local'].flux['0'][i],
-        #         self.particles['22_local'].flux['2'][i])
-        #         for i in range(0, len(self.particles['22_local'].e_grid))])
         self.rescale('22_local', '22')
-        # print('The resulting photon after rescaling')
-        # print([(self.particles['22'].e_grid[i] * self.geom.delta / (1. + self.geom.z),
-        #         self.particles['22'].flux['0'][i],
-        #         self.particles['22'].flux['2'][i])
-        #         for i in range(0, len(self.particles['22'].e_grid))])
-        # Results differ slightly compared to the original but not too bad
-        # debug_out = [(self.particles['22'].e_grid[i] * self.geom.delta / (1. + self.geom.z),
-        #               self.particles['22'].flux['0'][i])
-        #              for i in range(0, config['grid 22'])]
-        # print(debug_out)
-        # Need to rework this part
-
         summIC = np.zeros(config['grid_22'])
         for i in range(0, config['grid_22']):
 
-            # TODO: Do we need the mask? or is it always one?
-            mask = self.IC_rate[i, :, :, 2] == 1.
-
             # This is now a matrix vector multiplication
-            term = (np.dot(self.IC_rate[i, :, :, 0] * mask,
+            term = (np.dot(self.IC_rate[i, :, :, 0],  # * mask,
                     self.particles['11'].flux['0'] /
                     self.particles['11'].e_diff))
             summIC[i] = np.sum(self.particles['22'].flux['0'] * term)
@@ -324,18 +358,8 @@ class PyRun(Logger):
             self.particles['22'].flux['0'] * phys_const['h'] *
             self.particles['22'].e_grid)
 
-        # debug_out = [(self.particles['22'].e_grid[i] * self.geom.delta / (1. + self.geom.z),
-        #               self.particles['22'].flux['2'][i])
-        #              for i in range(0, config['grid 22'])]
-        # print(debug_out)
-
         # Pair
         # Is not implemented
-        # print('The resulting photon after IC')
-        # print([(self.particles['22'].e_grid[i] * self.geom.delta / (1. + self.geom.z),
-        #         self.particles['22'].flux['0'][i],
-        #         self.particles['22'].flux['2'][i])
-        #        for i in range(0, len(self.particles['22'].e_grid))])
         # Normalizing pre-storage
 
         # Todo: Why? Think this is causes a problem when
