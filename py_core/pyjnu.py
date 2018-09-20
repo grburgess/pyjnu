@@ -279,21 +279,59 @@ class PyRun(Logger):
                  part1.e_borders[low - i: up - i] * self.geom.nuB) /
                 ((part1.e_diff[low - i - 1: up - i - 1]) * self.geom.nuB)
             )
+    
+    def set_geometry(self, B, delta, R, d, z):
+        """
+        function: set_geometry
+        Sets the geometry of the object
+        Parameters:
+            -float B:
+                The B field
+            -float delta:
+                The delta parameter
+            -float R:
+                Radius of the object
+            -float d:
+                Distance to the object in MPC
+            -float z:
+                Redshift of the object
+        Retruns:
+            -None
+        Note:
+            d and z are both currently needed due to implementation.
+            This should be changed to only one required parameter and the
+            other should be calculated from it.
+        """
+        self.geom = geometry(B, delta, R, d, z)
 
-    def solve_steady(self):
+    def solve_steady(self,
+                     B=config['Bfield'], delta=config['delta'],
+                     R=config['R'], d=config['d'],
+                     z=config['z']):
         """
         function: solve_steady
         Solves for the steady state solution
-        Parameters:
+        Parameters (optional):
+            -float B:
+                The B field
+            -float delta:
+                The delta parameter
+            -float R:
+                Radius of the object
+            -float d:
+                Distance to the object in MPC
+            -float z:
+                Redshift of the object
+        Retruns:
             -None
-        Returns:
-            -None
+        Note:
+            d and z are both currently needed due to implementation.
+            This should be changed to only one required parameter and the
+            other should be calculated from it.
         """
         self.logger.info('Starting steady state solving...')
         self.logger.info('Setting the geometry...')
-        self.geom = geometry(self.config['Bfield'], self.config['delta'],
-                             self.config['R'], self.config['d'],
-                             self.config['z'])
+        self.set_geometry(B, delta, R, d, z)
         self.logger.info('Geometry set')
         self.logger.info('The initial electron spectrum...')
         self.__init_spectrum('11')
